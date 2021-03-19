@@ -1,0 +1,126 @@
+from flight_dispatcher import *
+
+TOKEN = ""
+GROUP_ID = ""
+
+SCENARIOS = {
+    "registration": {
+        "first_step": "step1",
+        "steps": {
+            "step1": {
+                "text": "Выберите город отправления.",
+                "failure_text": "Неправильно указан город.",
+                "action": None,
+                "handler": "handle_departure_city",
+                "next_step": "step2",
+                "rerun": False
+            },
+            "step2": {
+                "text": "Выберите город назначения.",
+                "failure_text": "Неправильно указан город или между этими городами нет сообщения. Попробуйте еще раз.",
+                "action": None,
+                "handler": "handle_destination_city",
+                "next_step": "step3",
+                "rerun": False
+            },
+            "step3": {
+                "text": "Выберите дату поездки в формате ДД-ММ-ГГГГ.",
+                "failure_text": "Неправильный формат даты.",
+                "action": None,
+                "handler": "handle_date",
+                "next_step": "step4",
+                "rerun": False
+            },
+            "step4": {
+                "text": "Выберите рейс из предложенных вариантов.",
+                "failure_text": "Неправильно выбран рейс.",
+                "action": "get_flight",
+                "handler": "handle_flight",
+                "next_step": "step5",
+                "act": True,
+                "rerun": False
+            },
+            "step5": {
+                "text": "Выберите количество мест (1-5).",
+                "failure_text": "Неверно указано количество мест. Оно должно быть целым числом от 1 до 5.",
+                "action": None,
+                "handler": "handle_place",
+                "next_step": "step6",
+                "rerun": False
+            },
+            "step6": {
+                "text": "Укажите ваши пожелания.",
+                "failure_text": None,
+                "action": None,
+                "handler": "handle_comment",
+                "next_step": "step7",
+                "rerun": False
+            },
+            "step7": {
+                "text": "Уточняем данные.\nМесто отправления: {departure_city},\nМесто прибытия: {destination_city}\n"
+                        "Дата отправления: {date}\nКоличество мест: {place_amount}\nКомментарий: {comment}\n(да/нет)",
+                "failure_text": "Попробуйте снова.",
+                "action": None,
+                "handler": "handle_answer",
+                "next_step": "step8",
+                "rerun": True
+            },
+            "step8": {
+                "text": "Введите номер телефона",
+                "failure_text": "Неправильно введен номер.",
+                "action": None,
+                "handler": "handle_phone_number",
+                "next_step": "step9",
+                "rerun": False
+            },
+            "step9": {
+                "text": "Спасибо за выбор нашей авиакомпании, с Вами свяжутся по указанному номеру.",
+                "failure_text": None,
+                "action": None,
+                "handler": None,
+                "next_step": None,
+                "rerun": False
+            }
+        }
+    }
+}
+
+
+DEFAULT_ANSWER = "Команды бота:\n/ticket - покупка билета;\n/help - вызовов этой справки."
+
+FLIGHT_LIST = {
+    "Лондон": {
+        "Москва": return_every_day_of_week(
+            datetime(year=2021, month=1, day=4, hour=10, minute=00)) + return_every_day_of_week(
+            datetime(year=2021, month=1, day=6, hour=12, minute=15)),
+        "Париж": return_every_day(datetime(year=2021, month=1, day=1, hour=15, minute=30), 10, 20),
+        "Берлин": [datetime(year=2021, month=1, day=1, hour=10, minute=00) + timedelta(days=3) * i for i in range(100)]
+    },
+    "Москва": {
+        "Лондон": return_every_day_of_week(
+            datetime(year=2021, month=1, day=4, hour=10, minute=00)) + return_every_day_of_week(
+            datetime(year=2021, month=1, day=6, hour=12, minute=15)),
+        "Париж": [datetime(year=2021, month=1, day=1, hour=11, minute=00) + timedelta(days=5) * i for i in range(100)],
+        "Берлин": [datetime(year=2021, month=i, day=i * 2, hour=19, minute=00) for i in range(1, 13)],
+        "Вашингтон": [datetime(year=2021, month=i, day=15, hour=8, minute=00) for i in range(1, 13)]
+    },
+    "Берлин": {
+        "Москва": [datetime(year=2021, month=i, day=i * 2, hour=20, minute=30) for i in range(1, 13)],
+        "Лондон": [datetime(year=2021, month=1, day=1, hour=13, minute=15) + timedelta(days=3) * i for i in range(100)],
+        "Париж": [datetime(year=2021, month=1, day=1, hour=11, minute=00) + timedelta(days=10) * i for i in range(36)],
+        "Вашингтон": [datetime(year=2021, month=i, day=15, hour=23, minute=45) for i in range(1, 7)]
+    },
+    "Париж": {
+        "Берлин": [datetime(year=2021, month=1, day=1, hour=11, minute=00) + timedelta(days=10) * i for i in range(36)],
+        "Москва": [datetime(year=2021, month=1, day=1, hour=11, minute=00) + timedelta(days=5) * i for i in range(100)],
+        "Лондон": return_every_day(datetime(year=2021, month=1, day=1, hour=15, minute=30), 10, 20),
+        "Вашингтон": return_every_day(datetime(year=2021, month=1, day=1, hour=14, minute=35), 10, 20, 25)
+    },
+    "Вашингтон": {
+        "Париж": return_every_day(datetime(year=2021, month=1, day=1, hour=17, minute=55), 10, 20, 25),
+        "Берлин": [datetime(year=2021, month=i, day=15, hour=23, minute=45) for i in range(1, 7)],
+        "Москва": [datetime(year=2021, month=i, day=15, hour=8, minute=00) for i in range(1, 13)]
+    }
+}
+
+DB_CONFIG = dict()
